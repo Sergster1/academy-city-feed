@@ -5,7 +5,9 @@ import json, sys, urllib.request, datetime, pathlib
 
 URL = ("https://api.open-meteo.com/v1/forecast?latitude=40.7128&longitude=-74.0060"
        "&current=temperature_2m,weather_code,wind_speed_10m,is_day"
-       "&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit"
+       "&daily=temperature_2m_max,temperature_2m_min"
+       "&hourly=precipitation_probability"
+       "&temperature_unit=fahrenheit"
        "&wind_speed_unit=mph&timezone=America%2FNew_York&forecast_days=1")
 
 WMO = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Fog",
@@ -31,6 +33,11 @@ def main():
         "is_day": int(cur["is_day"]),
         "updated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
     }
+    try:
+        hp = d["hourly"]["precipitation_probability"]  # 24 values, local time, 00:00-23:00
+        out["precip"] = [int(max(hp[i:i + 6])) for i in (0, 6, 12, 18)]
+    except Exception:
+        pass  # keep the feed working without the table
     p = pathlib.Path(__file__).parent / "site"
     p.mkdir(exist_ok=True)
     (p / "weather.json").write_text(json.dumps(out, separators=(",", ":")))
